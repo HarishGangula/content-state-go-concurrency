@@ -1,0 +1,2 @@
+docker run -p 9042:9042 --rm --name cassandra-docker -d cassandra:3.11
+CREATE KEYSPACE sunbirdcourse WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 1};

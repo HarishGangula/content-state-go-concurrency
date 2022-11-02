@@ -2,7 +2,7 @@ package models
 
 import "github.com/go-playground/validator/v10"
 
-type contents struct {
+type Content struct {
 	ContentId      string `json:"contentId" validate:"required"`
 	BatchId        string `json:"batchId" validate:"required"`
 	Status         int    `json:"status" validate:"required"`
@@ -11,8 +11,8 @@ type contents struct {
 }
 
 type request struct {
-	UserId   string     `json:"userId" validate:"required"`
-	Contents []contents `json:"contents" validate:"required"`
+	UserId   string    `json:"userId" validate:"required"`
+	Contents []Content `json:"contents" validate:"required"`
 }
 
 type Request struct {

@@ -3,6 +3,7 @@ package cassandra
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	models "github.com/HarishGangula/content-state-go-concurrency/models"
@@ -35,17 +36,37 @@ func Close() {
 	session.Close()
 }
 
-func UpsertContentState(r models.Request) map[string]bool {
-	response := map[string]bool{}
-	for _, content := range r.Request.Contents {
-		// session.Query()
-		query := `UPDATE contentstate  SET status=?, lastAccessTime=? WHERE userId=? and contentId=? and courseId=? and batchId=?`
-		if err := session.Query(query, content.Status, string(time.Now().UnixMilli()), r.Request.UserId, content.ContentId, content.CourseId, content.BatchId).Exec(); err != nil {
-			log.Println("Update error:", err)
-			response[content.ContentId] = false
-		} else {
-			response[content.ContentId] = true
-		}
+func update(userId string, content models.Content, res chan bool, wg *sync.WaitGroup) {
+	defer wg.Done()
+	query := `UPDATE contentstate  SET status=?, lastAccessTime=? WHERE userId=? and contentId=? and courseId=? and batchId=?`
+	if err := session.Query(query, content.Status, string(time.Now().UnixMilli()), userId, content.ContentId, content.CourseId, content.BatchId).Exec(); err != nil {
+		log.Println("Update error:", err)
+		res <- false
+	} else {
+		res <- true
 	}
-	return response
+}
+
+func UpsertContentState(r models.Request, responseChan chan models.Response) {
+	wg := new(sync.WaitGroup)
+	response := models.Response{}
+	channel := make(chan bool)
+	for _, content := range r.Request.Contents {
+		wg.Add(1)
+		go update(r.Request.UserId, content, channel, wg)
+		isUpserted := <-channel
+		if isUpserted {
+			response[content.ContentId] = true
+		} else {
+			response[content.ContentId] = false
+		}
+
+	}
+	go func() {
+		wg.Wait()
+		defer close(channel)
+	}()
+
+	responseChan <- response
+	close(responseChan)
 }

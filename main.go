@@ -22,7 +22,9 @@ func startServer() {
 			})
 
 		} else {
-			response := cassandra.UpsertContentState(*request)
+			responseChan := make(chan models.Response)
+			go cassandra.UpsertContentState(*request, responseChan)
+			response := <-responseChan
 			return c.Status(fiber.StatusOK).JSON(response)
 		}
 	})

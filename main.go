@@ -6,11 +6,14 @@ import (
 	cassandra "github.com/HarishGangula/content-state-go-concurrency/cassandra"
 	models "github.com/HarishGangula/content-state-go-concurrency/models"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func startServer() {
 	app := fiber.New()
-
+	app.Use(
+		logger.New(),
+	)
 	app.Patch("/api/v1/contentstate/update", func(c *fiber.Ctx) error {
 
 		request := new(models.Request)
